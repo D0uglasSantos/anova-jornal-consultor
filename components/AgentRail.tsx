@@ -57,9 +57,13 @@ interface AgentRailProps {
 export const AgentRail: React.FC<AgentRailProps> = ({ onSelectAgent, onOpenSettings }) => {
   return (
     <div className="hidden md:flex fixed left-0 top-0 bottom-0 w-20 bg-white border-r border-slate-200 z-[60] flex-col items-center py-8 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-      {/* Brand Icon Small */}
-      <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center mb-12 shadow-lg cursor-default">
-        <span className="text-white font-serif font-bold text-xl">A</span>
+      {/* Brand Icon - Anova Official */}
+      <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center mb-12 shadow-lg cursor-default overflow-hidden p-2">
+        <img 
+          src="/assets/logo-white.svg" 
+          alt="Anova Logo" 
+          className="w-full h-full object-contain"
+        />
       </div>
 
       <div className="flex flex-col gap-8 w-full px-4 flex-1">

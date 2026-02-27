@@ -411,8 +411,12 @@ export const HomeJournal: React.FC<HomeJournalProps> = ({
         <div className="md:hidden fixed inset-0 z-[100] flex">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsMobileSidebarOpen(false)} />
           <div className="relative w-20 bg-white h-full flex flex-col items-center py-8 shadow-2xl animate-in slide-in-from-left duration-300">
-            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center mb-12 shadow-lg">
-                <span className="text-white font-serif font-bold text-xl">A</span>
+            <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center mb-12 shadow-lg overflow-hidden p-2">
+                <img 
+                  src="/assets/logo-white.svg" 
+                  alt="Anova Logo" 
+                  className="w-full h-full object-contain"
+                />
             </div>
             <div className="flex flex-col gap-8 w-full px-4 flex-1">
                 {AGENTS.map((agent) => {
@@ -456,7 +460,13 @@ export const HomeJournal: React.FC<HomeJournalProps> = ({
                     >
                         <MoreVertical className="w-5 h-5" />
                     </button>
-                    <span className="font-serif text-2xl tracking-tighter text-zinc-900 font-bold">Anova</span>
+                    <div className="h-8 flex items-center">
+                        <img 
+                          src="/assets/logo-dark.svg" 
+                          alt="Anova Logo" 
+                          className="h-full object-contain"
+                        />
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-6">

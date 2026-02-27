@@ -52,13 +52,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
       <div className="z-10 w-full max-w-md p-6 sm:p-8 bg-white rounded-2xl shadow-2xl mx-4">
         <div className="flex flex-col items-center mb-8">
-          {/* Logo Placeholder - matching the triangular icon in screenshot */}
-          <div className="w-16 h-16 mb-4 flex items-center justify-center">
-             <svg viewBox="0 0 100 100" className="w-full h-full text-[#1a1a1a]" fill="currentColor">
-                <path d="M50 10 L90 80 L10 80 Z" fill="none" stroke="currentColor" strokeWidth="6" />
-                <path d="M50 25 L75 70 L25 70 Z" fill="none" stroke="currentColor" strokeWidth="4" />
-                <path d="M50 40 L60 60 L40 60 Z" fill="currentColor" />
-             </svg>
+          {/* Logo - Anova Official */}
+          <div className="w-24 h-24 mb-4 flex items-center justify-center">
+             <img 
+               src="/assets/logo-dark.svg" 
+               alt="Anova Logo" 
+               className="w-full h-full object-contain"
+             />
           </div>
           <h1 className="text-2xl font-bold text-[#1a1a1a] text-center">Plataforma de Operações</h1>
           <p className="text-sm text-gray-500 mt-1">Anova Investimentos</p>
