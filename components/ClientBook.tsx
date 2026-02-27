@@ -5,10 +5,17 @@ import {
   MessageSquare, Mic, Send, Paperclip, FileText, CheckCircle2, 
   Play, Pause, Wand2, Search as SearchIcon, QrCode, Smartphone,
   Zap, Sliders, Lock, Unlock, Target, ArrowRightLeft, DollarSign,
-  ChevronRight, ChevronDown, Check, Brain, Smile, User
+  ChevronRight, ChevronDown, Check, Brain, Smile, User, Building2, Wallet, ArrowUpRight,
+  PieChart as PieChartIcon, Activity, Info, X
 } from 'lucide-react';
-import { Client, TriggerType, ChatMessage, TimelineEvent, Priority, AutopilotConfig, FinancialGoal, AllocationOrder } from '../types';
+import { 
+  Client, TriggerType, ChatMessage, TimelineEvent, Priority, 
+  AutopilotConfig, FinancialGoal, AllocationOrder,
+  PortfolioData, PortfolioAccount, ConsolidatedPosition
+} from '../types';
 import * as GeminiService from '../services/geminiService';
+import * as AnovaService from '../services/anovaService';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
 interface ClientBookProps {
   client: Client;
@@ -50,6 +57,7 @@ const getMockOrders = (): AllocationOrder[] => [
 export const ClientBook: React.FC<ClientBookProps> = ({ client, initialSection, onBack }) => {
   const [activeTab, setActiveTab] = useState(initialSection || 'Resumo');
   const [activeMobileView, setActiveMobileView] = useState<'profile' | 'content' | 'copilot'>('content');
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false); // Closed by default on desktop
   const [chatInput, setChatInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([
     { id: '1', role: 'model', text: `Olá! Estou analisando a carteira de ${client.name}. O gatilho de ${client.mainTrigger.type} é prioritário hoje. Como posso ajudar?`, timestamp: new Date() }
@@ -57,6 +65,13 @@ export const ClientBook: React.FC<ClientBookProps> = ({ client, initialSection, 
   const [isThinking, setIsThinking] = useState(false);
   const [isLiveActive, setIsLiveActive] = useState(false);
   
+  // Portfolio State
+  const [portfolioData, setPortfolioData] = useState<PortfolioData | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<PortfolioAccount | null>(null);
+  const [consolidatedPosition, setConsolidatedPosition] = useState<ConsolidatedPosition | null>(null);
+  const [isPortfolioLoading, setIsPortfolioLoading] = useState(false);
+  const [isPositionLoading, setIsPositionLoading] = useState(false);
+
   // Autopilot State
   const [autopilot, setAutopilot] = useState<AutopilotConfig>(client.autopilot || getMockAutopilot());
   const [showAutopilotModal, setShowAutopilotModal] = useState(false);
@@ -147,6 +162,249 @@ export const ClientBook: React.FC<ClientBookProps> = ({ client, initialSection, 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       // Placeholder for file logic
   }
+
+  // --- Portfolio Logic ---
+  useEffect(() => {
+    if (activeTab === 'Carteira' && !portfolioData) {
+      loadPortfolioData();
+    }
+  }, [activeTab, client.name]);
+
+  const loadPortfolioData = async () => {
+    setIsPortfolioLoading(true);
+    const name = client.fullData?.nome_completo || client.name;
+    const data = await AnovaService.getPortfolioAccounts(name);
+    if (data) {
+      setPortfolioData(data);
+      // Auto-select first account if available
+      const allAccounts = [...(data.btg || []), ...(data.xp || []), ...(data.outras || [])];
+      if (allAccounts.length > 0) {
+        handleAccountSelect(allAccounts[0]);
+      }
+    }
+    setIsPortfolioLoading(false);
+  };
+
+  const handleAccountSelect = async (account: PortfolioAccount) => {
+    setSelectedAccount(account);
+    setIsPositionLoading(true);
+    const position = await AnovaService.getConsolidatedPosition(account.conta);
+    if (position) {
+      setConsolidatedPosition(position);
+    }
+    setIsPositionLoading(false);
+  };
+
+  const renderPortfolio = () => {
+    if (isPortfolioLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20 space-y-4">
+          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-500 font-medium">Carregando contas da carteira...</p>
+        </div>
+      );
+    }
+
+    if (!portfolioData) {
+      return (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 text-center py-20">
+          <div className="mx-auto w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+            <AlertCircle className="w-8 h-8 text-slate-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-slate-800">Nenhuma carteira encontrada</h3>
+          <p className="text-slate-500">Não foi possível localizar dados de carteira para este cliente.</p>
+          <button 
+            onClick={loadPortfolioData}
+            className="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700"
+          >
+            Tentar Novamente
+          </button>
+        </div>
+      );
+    }
+
+    const allAccounts = [
+      ...(portfolioData.btg || []).map(a => ({ ...a, broker: 'BTG' })),
+      ...(portfolioData.xp || []).map(a => ({ ...a, broker: 'XP' })),
+      ...(portfolioData.outras || []).map(a => ({ ...a, broker: 'Outras' }))
+    ];
+
+    return (
+      <div className="space-y-6 animate-in fade-in duration-500">
+        {/* Account Selector Tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar -mx-2 px-2">
+          {allAccounts.map((acc, idx) => (
+            <button
+              key={`${acc.conta}-${idx}`}
+              onClick={() => handleAccountSelect(acc)}
+              className={`px-5 py-2.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap border shadow-sm ${
+                selectedAccount?.conta === acc.conta
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-indigo-900/20'
+                  : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+              }`}
+            >
+              {acc.carteira} ({acc.broker})
+            </button>
+          ))}
+        </div>
+
+        {selectedAccount && (
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8">
+            <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-center">
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 shadow-inner">
+                  <User className="w-7 h-7" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 tracking-tight">{selectedAccount.nome_completo}</h3>
+                  <p className="text-sm text-slate-500">{selectedAccount.email}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-6 lg:gap-10 flex-1 w-full">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Conta</p>
+                  <p className="text-sm font-bold text-slate-900 font-mono">{selectedAccount.conta}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Perfil</p>
+                  <p className="text-sm font-bold text-slate-900">{selectedAccount.perfil_investidor}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tipo</p>
+                  <span className="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-md uppercase border border-emerald-100">
+                    {selectedAccount.classificacao_investidor}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Broker</p>
+                  <p className="text-sm font-bold text-slate-900">{selectedAccount.corretora}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Início</p>
+                  <p className="text-sm font-bold text-slate-900">{selectedAccount.data_registro}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isPositionLoading ? (
+          <div className="flex flex-col items-center justify-center py-32 space-y-4">
+            <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-slate-500 font-medium animate-pulse">Consolidando posição patrimonial...</p>
+          </div>
+        ) : consolidatedPosition ? (
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+            {/* Cards Section */}
+            <div className="xl:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-4 content-start">
+              {/* Total Equity Card */}
+              <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 col-span-full group hover:border-indigo-200 transition-all">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Patrimônio total</h4>
+                    <p className="text-sm text-slate-400 mb-4">Valor total investido e consolidado</p>
+                    <p className="text-4xl md:text-5xl font-serif font-bold text-slate-900 tracking-tight">
+                      R$ {parseFloat(consolidatedPosition.TotalAmmount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-indigo-50 text-indigo-600 rounded-2xl group-hover:scale-110 transition-transform">
+                    <Wallet className="w-8 h-8" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Summary Cards */}
+              {consolidatedPosition.SummaryAccounts.map((item, idx) => (
+                <div key={idx} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:border-slate-200 transition-all">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                    <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{item.MarketName}</h4>
+                  </div>
+                  <p className="text-2xl font-bold text-slate-900 tracking-tight">
+                    R$ {parseFloat(item.EndPositionValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-2 uppercase font-medium">Saldo atual em conta</p>
+                </div>
+              ))}
+
+              {/* Placeholder cards for other categories */}
+              {['Renda Variável', 'Renda Fixa', 'Fundos', 'Previdência', 'Futuros', 'Derivativos Opções', 'Valor em Trânsito', 'COE', 'Provisão Evento RF', 'Margem em Dinheiro'].map((cat) => {
+                const exists = consolidatedPosition.SummaryAccounts.find(s => s.MarketName === cat);
+                if (exists) return null;
+                return (
+                  <div key={cat} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 opacity-60 hover:opacity-100 transition-all">
+                    <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">{cat}</h4>
+                    <p className="text-2xl font-bold text-slate-300 tracking-tight">R$ 0,00</p>
+                    <p className="text-[10px] text-slate-400 mt-2 uppercase font-medium">Sem alocação ativa</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Chart Section */}
+            <div className="xl:col-span-4 flex flex-col">
+              <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex-1 flex flex-col">
+                <h3 className="font-bold text-slate-900 mb-8 flex items-center gap-2 text-lg">
+                  <PieChartIcon className="w-6 h-6 text-indigo-600" /> Alocação Patrimonial
+                </h3>
+                <div className="flex-1 min-h-[350px] w-full relative">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={Object.entries(consolidatedPosition.Distribution).map(([name, value]) => ({
+                          name,
+                          value: parseFloat(value as string)
+                        }))}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={80}
+                        outerRadius={110}
+                        paddingAngle={8}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {Object.entries(consolidatedPosition.Distribution).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#6366F1', '#8B5CF6'][index % 6]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value: number) => `${value.toFixed(2)}%`}
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '12px' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  {/* Center Label */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-xs text-slate-400 uppercase font-bold tracking-widest">Total</span>
+                    <span className="text-xl font-bold text-slate-900">100%</span>
+                  </div>
+                </div>
+                <div className="mt-8 space-y-4">
+                  {Object.entries(consolidatedPosition.Distribution).map(([name, value], idx) => (
+                    <div key={name} className="flex justify-between items-center text-sm group">
+                      <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#6366F1', '#8B5CF6'][idx % 6] }} />
+                        <span className="text-slate-600 group-hover:text-slate-900 transition-colors">{name}</span>
+                      </div>
+                      <span className="font-bold text-slate-900 bg-slate-50 px-2 py-1 rounded-lg">{value}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-12 text-center py-32">
+            <div className="mx-auto w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
+              <Activity className="w-10 h-10 text-slate-300" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800">Selecione uma conta para análise</h3>
+            <p className="text-slate-500 max-w-xs mx-auto mt-2">Escolha uma das contas acima para visualizar o detalhamento da posição consolidada.</p>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // --- Render Sections ---
 
@@ -621,6 +879,7 @@ export const ClientBook: React.FC<ClientBookProps> = ({ client, initialSection, 
             {activeTab === 'Mensageria' && renderMessaging()}
             {activeTab === 'Planejamento' && renderPlanning()}
             {activeTab === 'Alocação' && renderAllocation()}
+            {activeTab === 'Carteira' && renderPortfolio()}
 
             {/* Dados Cadastrais Section */}
             {activeTab === 'Resumo' && client.fullData && (
@@ -756,25 +1015,24 @@ export const ClientBook: React.FC<ClientBookProps> = ({ client, initialSection, 
                 </div>
             )}
             
-            {/* Chart Placeholder for Portfolio */}
-            {activeTab === 'Carteira' && (
-                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 text-center py-20">
-                     <div className="mx-auto w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                        <TrendingUp className="w-8 h-8 text-slate-400" />
-                     </div>
-                     <h3 className="text-lg font-semibold text-slate-800">Visualização da Carteira</h3>
-                     <p className="text-slate-500">Gráficos de alocação seriam renderizados aqui.</p>
-                 </div>
-            )}
         </div>
       </main>
 
       {/* COLUMN 3: AI Copilot (Sticky Right) */}
       <aside className={`
-        w-full md:w-80 xl:w-96 flex-shrink-0 bg-white border-l border-slate-200 flex flex-col h-full shadow-lg z-20
-        ${activeMobileView === 'copilot' ? 'flex' : 'hidden md:flex'}
+        fixed md:relative right-0 top-0 bottom-0 h-full bg-white border-l border-slate-200 flex flex-col shadow-2xl md:shadow-lg z-50 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]
+        ${isCopilotOpen ? 'w-full md:w-80 xl:w-96 translate-x-0' : 'w-0 md:w-0 translate-x-full md:translate-x-0 overflow-hidden border-none'}
+        ${activeMobileView === 'copilot' ? 'flex w-full translate-x-0' : ''}
       `}>
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-indigo-600 to-indigo-700 text-white">
+        {/* Toggle Button for Desktop (Visible when closed or open) */}
+        <button 
+            onClick={() => setIsCopilotOpen(!isCopilotOpen)}
+            className={`hidden md:flex absolute top-1/2 -left-10 w-10 h-20 bg-white border border-r-0 border-slate-200 rounded-l-2xl items-center justify-center text-slate-400 hover:text-indigo-600 transition-all shadow-[-4px_0_10px_rgba(0,0,0,0.05)] group`}
+        >
+            <ChevronRight className={`w-5 h-5 transition-transform duration-500 ${isCopilotOpen ? 'rotate-0' : 'rotate-180'}`} />
+        </button>
+
+        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shrink-0">
             <div className="flex items-center gap-2">
                 <Wand2 className="w-5 h-5" />
                 <h2 className="font-bold tracking-wide">Copilot Anova</h2>
@@ -782,6 +1040,9 @@ export const ClientBook: React.FC<ClientBookProps> = ({ client, initialSection, 
             <div className="flex gap-2">
                  <button onClick={toggleLive} className={`p-2 rounded-full transition-colors ${isLiveActive ? 'bg-red-500 animate-pulse' : 'bg-white/10 hover:bg-white/20'}`}>
                     <Mic className="w-4 h-4 text-white" />
+                 </button>
+                 <button onClick={() => setIsCopilotOpen(false)} className="md:hidden p-2 bg-white/10 rounded-full">
+                    <X className="w-4 h-4 text-white" />
                  </button>
             </div>
         </div>

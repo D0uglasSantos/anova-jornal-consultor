@@ -141,3 +141,40 @@ export interface Agent {
   color: string;
   capabilities: string[];
 }
+
+export interface PortfolioAccount {
+  carteira: string;
+  conta: string;
+  corretora: string;
+  data_registro: string;
+  classificacao_investidor: string;
+  perfil_investidor: string;
+  pl_inicial: any;
+  email: string;
+  celular: string;
+  nome_hub: string;
+  nome_completo: string;
+}
+
+export interface PortfolioData {
+  nome_completo: string;
+  btg: PortfolioAccount[];
+  xp: PortfolioAccount[];
+  outras: PortfolioAccount[];
+}
+
+export interface ConsolidatedPosition {
+  AccountNumber: string;
+  PositionDate: string;
+  TotalAmmount: string;
+  SummaryAccounts: {
+    MarketName: string;
+    EndPositionValue: string;
+  }[];
+  Distribution: Record<string, string>;
+  Timestamp: string;
+  InvestmentFund?: any[];
+  FixedIncomePositions?: any[];
+  StockPositions?: any[];
+  OptionPositions?: any[];
+}

@@ -36,15 +36,15 @@ export const ClientOverlay: React.FC<ClientOverlayProps> = ({
   }, [handleKeyDown]);
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-8 pb-24 md:pb-28">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-0 md:p-8">
       {/* Backdrop with enhanced blur and smooth entry */}
       <div 
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-xl transition-all duration-500 animate-in fade-in"
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-all duration-500 animate-in fade-in"
         onClick={onClose}
       />
 
       {/* Main Modal Container with Apple-style spring animation */}
-      <div className="relative w-full h-full max-w-[1600px] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-[0.96] fade-in duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ring-1 ring-white/20">
+      <div className="relative w-full h-full md:h-[90vh] max-w-[1600px] bg-white md:rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row animate-in zoom-in-[0.96] fade-in duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ring-1 ring-white/20">
         
         {/* Close Button - Floats top right */}
         <button 
