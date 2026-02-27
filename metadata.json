@@ -1,0 +1,7 @@
+{
+  "name": "NOVA ANOVA INVESTIMENTOS PLATAFORM",
+  "description": "A comprehensive WealthTech B2B cockpit for financial consultants, featuring AI-driven insights, real-time voice interaction, and a narrative-centric client management approach.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
