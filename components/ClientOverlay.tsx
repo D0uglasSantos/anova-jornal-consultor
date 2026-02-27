@@ -7,6 +7,7 @@ import { ClientBook } from './ClientBook';
 interface ClientOverlayProps {
   client: Client;
   initialSection?: string;
+  userEmail?: string;
   onClose: () => void;
   onNext: () => void;
   onPrev: () => void;
@@ -17,6 +18,7 @@ interface ClientOverlayProps {
 export const ClientOverlay: React.FC<ClientOverlayProps> = ({ 
   client, 
   initialSection = "Resumo",
+  userEmail,
   onClose, 
   onNext, 
   onPrev,
@@ -82,6 +84,7 @@ export const ClientOverlay: React.FC<ClientOverlayProps> = ({
              <ClientBook 
                 key={`${client.id}-${initialSection}`} // Force re-mount when client or section changes
                 client={client} 
+                userEmail={userEmail}
                 onBack={onClose} 
                 initialSection={initialSection}
              />

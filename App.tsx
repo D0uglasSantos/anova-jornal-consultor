@@ -448,6 +448,7 @@ export default function App() {
         <ClientOverlay 
           client={selectedClient}
           initialSection={selectedSection}
+          userEmail={userData?.username}
           onClose={() => setSelectedClientId(null)}
           onNext={handleNextClient}
           onPrev={handlePrevClient}

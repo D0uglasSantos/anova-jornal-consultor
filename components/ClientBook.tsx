@@ -20,6 +20,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recha
 interface ClientBookProps {
   client: Client;
   initialSection?: string;
+  userEmail?: string;
   onBack: () => void;
 }
 
@@ -54,7 +55,7 @@ const getMockOrders = (): AllocationOrder[] => [
   { id: '102', asset: 'Veneza FI Multimercado', ticker: 'VENEZA', type: 'sell', amount: 25000, status: 'pending', date: '2023-10-28' },
 ];
 
-export const ClientBook: React.FC<ClientBookProps> = ({ client, initialSection, onBack }) => {
+export const ClientBook: React.FC<ClientBookProps> = ({ client, initialSection, userEmail, onBack }) => {
   const [activeTab, setActiveTab] = useState(initialSection || 'Resumo');
   const [activeMobileView, setActiveMobileView] = useState<'profile' | 'content' | 'copilot'>('content');
   const [isCopilotOpen, setIsCopilotOpen] = useState(false); // Closed by default on desktop
@@ -71,6 +72,11 @@ export const ClientBook: React.FC<ClientBookProps> = ({ client, initialSection, 
   const [consolidatedPosition, setConsolidatedPosition] = useState<ConsolidatedPosition | null>(null);
   const [isPortfolioLoading, setIsPortfolioLoading] = useState(false);
   const [isPositionLoading, setIsPositionLoading] = useState(false);
+
+  // Allocation State
+  const [orderStats, setOrderStats] = useState<any>(null);
+  const [ordersList, setOrdersList] = useState<any[]>([]);
+  const [isAllocationLoading, setIsAllocationLoading] = useState(false);
 
   // Autopilot State
   const [autopilot, setAutopilot] = useState<AutopilotConfig>(client.autopilot || getMockAutopilot());
@@ -169,6 +175,30 @@ export const ClientBook: React.FC<ClientBookProps> = ({ client, initialSection, 
       loadPortfolioData();
     }
   }, [activeTab, client.name]);
+
+  // --- Allocation Logic ---
+  useEffect(() => {
+    const clientEmail = client.fullData?.email;
+    if (activeTab === 'Alocação' && clientEmail) {
+      loadAllocationData(clientEmail);
+    }
+  }, [activeTab, client.fullData?.email]);
+
+  const loadAllocationData = async (email: string) => {
+    setIsAllocationLoading(true);
+    try {
+      const [stats, list] = await Promise.all([
+        AnovaService.getOrderStats(email),
+        AnovaService.getOrders(email)
+      ]);
+      if (stats) setOrderStats(stats);
+      if (list) setOrdersList(list);
+    } catch (error) {
+      console.error("Error loading allocation data:", error);
+    } finally {
+      setIsAllocationLoading(false);
+    }
+  };
 
   const loadPortfolioData = async () => {
     setIsPortfolioLoading(true);
@@ -689,7 +719,7 @@ export const ClientBook: React.FC<ClientBookProps> = ({ client, initialSection, 
   );
 
   const renderAllocation = () => (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
        {/* Order Entry */}
        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
           <h3 className="font-bold text-slate-900 mb-6 flex items-center gap-2">
@@ -719,50 +749,95 @@ export const ClientBook: React.FC<ClientBookProps> = ({ client, initialSection, 
           </div>
        </div>
 
+       {/* Stats Cards */}
+       {orderStats && (
+         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {[
+              { label: 'Fechadas', value: orderStats.fechados, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+              { label: 'Abertas', value: orderStats.abertos, color: 'text-slate-600', bg: 'bg-slate-50' },
+              { label: 'Com Pendência', value: orderStats.com_pendencia, color: 'text-amber-600', bg: 'bg-amber-50' },
+              { label: 'Em Tratamento', value: orderStats.em_tratamento, color: 'text-cyan-600', bg: 'bg-cyan-50' },
+              { label: 'Executadas', value: orderStats.executados, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+              { label: 'Rejeitadas', value: orderStats.rejeitados, color: 'text-rose-600', bg: 'bg-rose-50' },
+            ].map((stat, i) => (
+              <div key={i} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">{stat.label}</p>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${stat.bg.replace('bg-', 'bg-')}`} style={{ backgroundColor: stat.color.replace('text-', '') }} />
+                  <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
+                </div>
+              </div>
+            ))}
+         </div>
+       )}
+
        {/* Orders List */}
        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-             <h4 className="font-bold text-slate-700 text-sm">Ordens Recentes</h4>
+          <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+             <h4 className="font-bold text-slate-700 text-sm">Tabela de Ordens</h4>
+             {isAllocationLoading && <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />}
           </div>
-          <table className="w-full text-sm text-left">
-             <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
-                <tr>
-                   <th className="px-6 py-3">Data</th>
-                   <th className="px-6 py-3">Ativo</th>
-                   <th className="px-6 py-3">Tipo</th>
-                   <th className="px-6 py-3 text-right">Valor</th>
-                   <th className="px-6 py-3 text-center">Status</th>
-                </tr>
-             </thead>
-             <tbody className="divide-y divide-slate-100">
-                {orders.map(order => (
-                   <tr key={order.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4 text-slate-500">{order.date}</td>
-                      <td className="px-6 py-4 font-medium text-slate-900">
-                         {order.asset} <span className="text-slate-400 font-normal ml-1">({order.ticker})</span>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+               <thead className="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-widest border-b border-slate-100">
+                  <tr>
+                     <th className="px-6 py-4">Ações</th>
+                     <th className="px-6 py-4">ID Ordem</th>
+                     <th className="px-6 py-4">Cliente</th>
+                     <th className="px-6 py-4">Hub</th>
+                     <th className="px-6 py-4">Assunto</th>
+                     <th className="px-6 py-4">Tipo</th>
+                     <th className="px-6 py-4">Status</th>
+                     <th className="px-6 py-4">Data/Hora</th>
+                  </tr>
+               </thead>
+               <tbody className="divide-y divide-slate-100">
+                  {ordersList.length > 0 ? ordersList.map((order, idx) => (
+                     <tr key={order.ticket_id || idx} className="hover:bg-slate-50 transition-colors group">
+                        <td className="px-6 py-4">
+                           <div className="flex items-center gap-2">
+                              <button className="p-1.5 bg-slate-50 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all">
+                                 <MessageSquare className="w-4 h-4" />
+                              </button>
+                              <button className="p-1.5 bg-slate-50 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all">
+                                 <Activity className="w-4 h-4" />
+                              </button>
+                           </div>
+                        </td>
+                        <td className="px-6 py-4 font-mono text-xs text-slate-500">ID-{order.ticket_id}</td>
+                        <td className="px-6 py-4">
+                           <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-900">{order.nome_cliente}</span>
+                              <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase font-bold">CT</span>
+                           </div>
+                        </td>
+                        <td className="px-6 py-4 text-slate-600">{order.nome_hub}</td>
+                        <td className="px-6 py-4 text-slate-600">{order.assunto}</td>
+                        <td className="px-6 py-4 text-slate-600">{order.ordem_tipo}</td>
+                        <td className="px-6 py-4">
+                           <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide ${
+                              order.status === 'executado' || order.status === 'Ordem executada' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
+                              order.status === 'aberto' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' :
+                              order.status === 'rejeitado' || order.status === 'Ordem rejeitada' ? 'bg-rose-50 text-rose-700 border border-rose-100' :
+                              'bg-cyan-50 text-cyan-700 border border-cyan-100'
+                           }`}>
+                              {order.status}
+                           </span>
+                        </td>
+                        <td className="px-6 py-4 text-slate-500 text-xs">
+                           {order.aberto_em ? new Date(order.aberto_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
+                        </td>
+                     </tr>
+                  )) : !isAllocationLoading && (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-20 text-center text-slate-400 font-medium">
+                        Nenhuma ordem encontrada para este período.
                       </td>
-                      <td className="px-6 py-4">
-                         <span className={`text-xs font-bold uppercase ${order.type === 'buy' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                            {order.type === 'buy' ? 'Compra' : 'Venda'}
-                         </span>
-                      </td>
-                      <td className="px-6 py-4 text-right font-medium text-slate-700">
-                         R$ {order.amount.toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
-                            order.status === 'executed' ? 'bg-emerald-100 text-emerald-700' :
-                            order.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'
-                         }`}>
-                            {order.status === 'executed' && <Check className="w-3 h-3" />}
-                            {order.status === 'pending' && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />}
-                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                         </span>
-                      </td>
-                   </tr>
-                ))}
-             </tbody>
-          </table>
+                    </tr>
+                  )}
+               </tbody>
+            </table>
+          </div>
        </div>
     </div>
   );

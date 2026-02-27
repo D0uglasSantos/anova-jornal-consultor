@@ -38,3 +38,33 @@ export async function getConsolidatedPosition(accountNumber: string) {
     return null;
   }
 }
+
+export async function getOrderStats(email: string) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/boletagem/orders/stats?email=${encodeURIComponent(email)}`, {
+      headers: {
+        'Authorization': `Bearer ${AUTH_TOKEN}`
+      }
+    });
+    if (!response.ok) throw new Error('Falha ao buscar estatísticas de ordens');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching order stats:', error);
+    return null;
+  }
+}
+
+export async function getOrders(email: string) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/boletagem/orders?email=${encodeURIComponent(email)}`, {
+      headers: {
+        'Authorization': `Bearer ${AUTH_TOKEN}`
+      }
+    });
+    if (!response.ok) throw new Error('Falha ao buscar ordens');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+    return null;
+  }
+}
