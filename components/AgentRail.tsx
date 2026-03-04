@@ -1,7 +1,15 @@
 
-import React from 'react';
-import { Brain, Calendar, Target, ShieldCheck, LucideIcon, Settings } from 'lucide-react';
+import React, { useState } from 'react';
+import { Brain, Calendar, Target, ShieldCheck, LucideIcon, Settings, Zap } from 'lucide-react';
 import { Agent, AgentRole } from '../types';
+
+// Accent color per agent (monochromatic-safe subtle tones)
+const AGENT_ACCENT: Record<string, string> = {
+  strategist: '#818cf8', // indigo-400
+  concierge:  '#fb7185', // rose-400
+  hunter:     '#34d399', // emerald-400
+  compliance: '#94a3b8', // slate-400
+};
 
 export const AGENTS: Agent[] = [
   {
@@ -37,7 +45,7 @@ export const AGENTS: Agent[] = [
     title: 'Risco & Compliance',
     description: 'Garante conformidade regulatória e adequação (Suitability) dos clientes.',
     iconName: 'ShieldCheck',
-    color: 'bg-slate-600',
+    color: 'bg-zinc-600',
     capabilities: ['Checar Suitability', 'Alertas de KYC', 'Documentos Pendentes']
   }
 ];
@@ -55,62 +63,133 @@ interface AgentRailProps {
 }
 
 export const AgentRail: React.FC<AgentRailProps> = ({ onSelectAgent, onOpenSettings }) => {
+  const [activeId, setActiveId] = useState<string | null>(null);
+
   return (
-    <div className="hidden md:flex fixed left-0 top-0 bottom-0 w-20 bg-white border-r border-slate-200 z-[60] flex-col items-center py-8 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
-      {/* Brand Icon - Anova Official */}
-      <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center mb-12 shadow-lg cursor-default overflow-hidden p-2">
-        <img 
-          src="/assets/logo-white.svg" 
-          alt="Anova Logo" 
-          className="w-full h-full object-contain"
-        />
+    <div className="hidden md:flex fixed left-0 top-0 bottom-0 w-[72px] bg-white z-[60] flex-col items-center py-5"
+         style={{ borderRight: '1px solid #f4f4f5', boxShadow: '1px 0 0 0 rgba(0,0,0,0.03), 4px 0 24px rgba(0,0,0,0.018)' }}>
+
+      {/* ── Brand Mark ── */}
+      <div className="mb-7 shrink-0">
+        <div className="w-9 h-9 bg-zinc-950 rounded-[10px] flex items-center justify-center shadow-lg overflow-hidden p-[7px] cursor-default"
+             style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.04) inset' }}>
+          <img src="/assets/logo-white.svg" alt="Anova" className="w-full h-full object-contain" />
+        </div>
       </div>
 
-      <div className="flex flex-col gap-8 w-full px-4 flex-1">
+      {/* ── AI Badge ── */}
+      <div className="mb-5 flex items-center gap-1 px-2 py-1 rounded-full bg-zinc-50 border border-zinc-100">
+        <Zap className="w-2.5 h-2.5 text-zinc-400" />
+        <span className="text-[7px] font-bold uppercase tracking-[0.12em] text-zinc-400">AI</span>
+      </div>
+
+      {/* ── Agent Buttons ── */}
+      <div className="flex flex-col items-center gap-1 w-full px-2.5 flex-1">
         {AGENTS.map((agent) => {
           const Icon = IconMap[agent.iconName];
+          const accent = AGENT_ACCENT[agent.id];
+          const isActive = activeId === agent.id;
+
           return (
-            <div key={agent.id} className="relative group flex justify-center">
-              {/* Tooltip Pop-up */}
-              <div className="absolute left-14 top-1/2 -translate-y-1/2 ml-4 w-64 bg-slate-900 text-white p-4 rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform group-hover:translate-x-0 translate-x-2 shadow-xl z-50 pointer-events-none">
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 border-4 border-transparent border-r-slate-900"></div>
-                <div className="flex items-center gap-2 mb-1">
-                   <div className={`w-2 h-2 rounded-full ${agent.color.replace('bg-', 'bg-white/80 ')}`}></div>
-                   <span className="font-bold text-sm tracking-wide">{agent.title}</span>
-                </div>
-                <p className="text-slate-300 text-xs leading-relaxed mb-2 border-b border-white/10 pb-2">
-                  {agent.description}
-                </p>
-                <div className="flex flex-wrap gap-1">
-                    {agent.capabilities.slice(0,2).map((cap, i) => (
-                        <span key={i} className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white/80">{cap}</span>
+            <div key={agent.id} className="relative w-full group/agent flex justify-center">
+
+              {/* ── Tooltip ── */}
+              <div className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 w-64 opacity-0 invisible group-hover/agent:opacity-100 group-hover/agent:visible translate-x-1 group-hover/agent:translate-x-0 transition-all duration-200 z-[200]">
+                {/* Arrow */}
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[6px] border-[5px] border-transparent"
+                     style={{ borderRightColor: '#09090b' }} />
+                {/* Card */}
+                <div className="bg-zinc-950 rounded-xl p-4 shadow-2xl" style={{ boxShadow: '0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04) inset' }}>
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
+                         style={{ backgroundColor: accent + '22' }}>
+                      <Icon className="w-3.5 h-3.5" style={{ color: accent }} />
+                    </div>
+                    <div>
+                      <p className="text-white text-xs font-semibold leading-tight">{agent.title}</p>
+                      <p className="text-zinc-500 text-[9px] font-medium mt-0.5">{agent.name}</p>
+                    </div>
+                  </div>
+                  <p className="text-zinc-400 text-[11px] leading-relaxed mb-3 pb-3 border-b border-white/[0.06]">
+                    {agent.description}
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {agent.capabilities.map((cap, i) => (
+                      <span key={i} className="text-[9px] font-medium px-1.5 py-0.5 rounded-md text-zinc-400"
+                            style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}>
+                        {cap}
+                      </span>
                     ))}
+                  </div>
+                  <div className="mt-3 pt-2 border-t border-white/[0.06] flex items-center gap-1.5">
+                    <div className="w-1 h-1 rounded-full bg-emerald-500" />
+                    <span className="text-[9px] text-zinc-500 font-medium">Clique para abrir</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Icon Button */}
+              {/* ── Button ── */}
               <button
-                onClick={() => onSelectAgent(agent)}
-                className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-200 text-slate-400 hover:text-white hover:border-transparent hover:shadow-lg hover:scale-110 transition-all duration-300 flex items-center justify-center relative overflow-hidden group-hover:bg-slate-900"
+                onClick={() => { onSelectAgent(agent); setActiveId(agent.id); }}
+                className="agent-btn relative w-full flex flex-col items-center gap-1.5 py-2.5 px-1.5 rounded-xl transition-all duration-200 overflow-hidden"
+                style={isActive ? { backgroundColor: '#f4f4f5' } : {}}
+                onMouseLeave={() => {}}
               >
-                <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity ${agent.color}`} />
-                <Icon className="w-6 h-6 relative z-10" />
+                {/* Left accent bar */}
+                <div
+                  className="absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full opacity-0 group-hover/agent:opacity-100 transition-all duration-300"
+                  style={{ backgroundColor: accent }}
+                />
+
+                {/* Icon wrapper */}
+                <div
+                  className="w-9 h-9 rounded-[10px] flex items-center justify-center transition-all duration-200 text-zinc-400 group-hover/agent:text-white group-hover/agent:shadow-lg"
+                  style={{}}
+                >
+                  <div className="w-full h-full rounded-[10px] flex items-center justify-center bg-zinc-100 group-hover/agent:bg-zinc-950 transition-all duration-200">
+                    <Icon className="w-[18px] h-[18px]" />
+                  </div>
+                </div>
+
+                {/* Label */}
+                <span className="text-[8px] font-bold uppercase tracking-[0.1em] text-zinc-400 group-hover/agent:text-zinc-700 transition-colors duration-200 leading-none">
+                  {agent.name}
+                </span>
               </button>
             </div>
           );
         })}
       </div>
 
-      {/* Settings Button (Bottom) */}
-      <div className="px-4">
-        <button 
+      {/* ── Divider ── */}
+      <div className="w-8 h-px bg-zinc-100 my-3 shrink-0" />
+
+      {/* ── Settings ── */}
+      <div className="w-full px-2.5 shrink-0 group/settings">
+        <div className="relative flex justify-center">
+          {/* Tooltip */}
+          <div className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 -translate-y-1/2 opacity-0 invisible group-hover/settings:opacity-100 group-hover/settings:visible translate-x-1 group-hover/settings:translate-x-0 transition-all duration-200 z-[200]">
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[6px] border-[5px] border-transparent"
+                 style={{ borderRightColor: '#09090b' }} />
+            <div className="bg-zinc-950 rounded-lg px-3 py-2 shadow-xl whitespace-nowrap">
+              <p className="text-white text-xs font-medium">Configurações</p>
+            </div>
+          </div>
+
+          <button
             onClick={onOpenSettings}
-            className="w-12 h-12 rounded-2xl bg-white border border-slate-200 text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all flex items-center justify-center relative group"
-            title="Configurações Globais"
-        >
-            <Settings className="w-6 h-6 group-hover:rotate-90 transition-transform duration-500" />
-        </button>
+            className="agent-btn w-full flex flex-col items-center gap-1.5 py-2.5 px-1.5 rounded-xl hover:bg-zinc-50 transition-all duration-200 group"
+          >
+            <div className="w-9 h-9 rounded-[10px] bg-zinc-100 flex items-center justify-center text-zinc-400 group-hover:text-zinc-900 group-hover:bg-zinc-200 transition-all duration-200">
+              <Settings className="w-[18px] h-[18px] group-hover:rotate-[70deg] transition-transform duration-500" />
+            </div>
+            <span className="text-[8px] font-bold uppercase tracking-[0.1em] text-zinc-400 group-hover:text-zinc-700 transition-colors duration-200 leading-none">
+              Config
+            </span>
+          </button>
+        </div>
       </div>
+
     </div>
   );
 };
