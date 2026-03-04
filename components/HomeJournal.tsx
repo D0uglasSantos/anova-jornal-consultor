@@ -7,6 +7,8 @@ import { AgentRail, AGENTS, IconMap } from './AgentRail';
 import { AgentCommandCenter } from './AgentCommandCenter';
 import { SettingsModal } from './SettingsModal';
 
+import { ClientRegistrationModal } from './ClientRegistrationModal';
+
 interface HomeJournalProps {
   clients: Client[];
   allClients: Client[];
@@ -18,6 +20,7 @@ interface HomeJournalProps {
   onSearchChange: (query: string) => void;
   onSelectClient: (id: string, section?: string) => void;
   onLogout: () => void;
+  userData: any;
 }
 
 // --- Skeleton Components ---
@@ -205,8 +208,9 @@ const ClientRail: React.FC<{
   title: string; 
   clients: Client[]; 
   onClientClick: (id: string) => void; 
-  icon?: React.ReactNode 
-}> = ({ title, clients, onClientClick, icon }) => {
+  icon?: React.ReactNode;
+  onAddClick?: () => void;
+}> = ({ title, clients, onClientClick, icon, onAddClick }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   if (clients.length === 0) return null;
@@ -224,11 +228,21 @@ const ClientRail: React.FC<{
 
   return (
     <div className="mb-6 group/rail relative">
-      <div className="flex items-center gap-3 px-4 md:px-12 mb-4">
-        <div className="text-zinc-900 opacity-80">{icon}</div>
-        <h2 className="text-lg md:text-xl font-bold text-zinc-900 tracking-tight font-serif">
-          {title}
-        </h2>
+      <div className="flex items-center justify-between px-4 md:px-12 mb-4">
+        <div className="flex items-center gap-3">
+          <div className="text-zinc-900 opacity-80">{icon}</div>
+          <h2 className="text-lg md:text-xl font-bold text-zinc-900 tracking-tight font-serif">
+            {title}
+          </h2>
+        </div>
+        {onAddClick && (
+          <button 
+            onClick={onAddClick}
+            className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-zinc-800 transition-all shadow-sm"
+          >
+            Cadastrar Cliente
+          </button>
+        )}
       </div>
       
       <div className="absolute top-[60%] -translate-y-1/2 left-4 z-20 opacity-0 group-hover/rail:opacity-100 transition-all duration-300 hidden md:block">
@@ -287,12 +301,14 @@ export const HomeJournal: React.FC<HomeJournalProps> = ({
   searchQuery,
   onSearchChange,
   onSelectClient, 
-  onLogout 
+  onLogout,
+  userData
 }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState<Metric | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const metricsRef = useRef<HTMLDivElement>(null);
@@ -379,6 +395,7 @@ export const HomeJournal: React.FC<HomeJournalProps> = ({
           clients={clients} 
           onClientClick={onSelectClient} 
           icon={<User className="w-5 h-5 text-zinc-900" />} 
+          onAddClick={() => setIsRegistrationOpen(true)}
         />
         {MAIN_ORDER.map(portfolio => {
           const portfolioClients = grouped[portfolio];
@@ -694,6 +711,16 @@ export const HomeJournal: React.FC<HomeJournalProps> = ({
       {isSettingsOpen && (
           <SettingsModal onClose={() => setIsSettingsOpen(false)} />
       )}
+
+      {/* Client Registration Modal */}
+      <ClientRegistrationModal 
+        isOpen={isRegistrationOpen} 
+        onClose={() => setIsRegistrationOpen(false)}
+        userData={userData}
+        onSave={(data) => {
+          console.log('Saving client data:', data);
+        }}
+      />
 
     </div>
   );

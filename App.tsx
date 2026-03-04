@@ -432,6 +432,7 @@ export default function App() {
             setSelectedSection(section || 'Resumo');
         }}
         onLogout={handleLogout}
+        userData={userData}
       />
 
       {/* 2. The Dock (Fixed Navigation) 
