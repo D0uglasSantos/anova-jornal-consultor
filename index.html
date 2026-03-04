@@ -6,20 +6,77 @@
     <title>Anova - Jornal do Consultor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      /* Custom Scrollbar for a cleaner look */
-      ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar { width: 5px; height: 5px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 99px; }
+      ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+
+      /* Keyframes */
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
       }
-      ::-webkit-scrollbar-track {
-        background: #f1f5f9;
+      @keyframes slideDownFade {
+        from { opacity: 0; transform: translateY(-6px); }
+        to { opacity: 1; transform: translateY(0); }
       }
-      ::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 3px;
+      @keyframes slideUpFade {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
       }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
+      @keyframes slideLeftFade {
+        from { opacity: 0; transform: translateX(-10px); }
+        to { opacity: 1; transform: translateX(0); }
+      }
+
+      /* Animation utility classes */
+      .anim-fade-in        { animation: fadeIn 0.25s ease-out both; }
+      .anim-slide-down     { animation: slideDownFade 0.2s ease-out both; }
+      .anim-slide-up       { animation: slideUpFade 0.35s ease-out both; }
+      .anim-slide-left     { animation: slideLeftFade 0.3s ease-out both; }
+
+      /* Stagger delays */
+      .delay-50  { animation-delay: 50ms; }
+      .delay-100 { animation-delay: 100ms; }
+      .delay-150 { animation-delay: 150ms; }
+      .delay-200 { animation-delay: 200ms; }
+
+      /* No scrollbar utility */
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+      /* Smooth font rendering */
+      body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+      /* Notification ping ring */
+      @keyframes notifPing {
+        0% { transform: scale(1); opacity: 0.8; }
+        80%, 100% { transform: scale(2.2); opacity: 0; }
+      }
+      .notif-ping {
+        animation: notifPing 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+      }
+
+      /* Sidebar accent bar slide-in */
+      @keyframes accentSlide {
+        from { transform: scaleY(0); opacity: 0; }
+        to   { transform: scaleY(1); opacity: 1; }
+      }
+
+      /* Sidebar button press */
+      .agent-btn:active { transform: scale(0.93); }
+
+      /* Header slide down */
+      @keyframes headerIn {
+        from { opacity: 0; transform: translateY(-8px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .header-in { animation: headerIn 0.4s ease-out both; }
+
+      /* User initials gradient */
+      .avatar-initials {
+        background: linear-gradient(135deg, #18181b 0%, #3f3f46 100%);
       }
     </style>
   <script type="importmap">
