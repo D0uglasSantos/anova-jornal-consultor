@@ -1,13 +1,13 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Bell, ChevronRight, TrendingUp, TrendingDown, ChevronLeft, ArrowUpRight, Building2, Wallet, MessageCircle, Mic, Play, Menu, User, LogOut, Settings, Zap } from 'lucide-react';
+import { Search, Bell, ChevronRight, TrendingUp, TrendingDown, ChevronLeft, ArrowUpRight, Building2, Wallet, MessageCircle, Mic, Play, Menu, User, LogOut, Settings, Zap, X } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 import { Client, Priority, TriggerType, ViewContext, Metric, Agent, Notification } from '../types';
 import { MetricOverlay } from './MetricOverlay';
 import { AgentRail, AGENTS, IconMap } from './AgentRail';
 import { AgentCommandCenter } from './AgentCommandCenter';
 import { SettingsModal } from './SettingsModal';
-import { ClientRegistrationModal } from './ClientRegistrationModal';
+// import { ClientRegistrationModal } from './ClientRegistrationModal'; // V2 - Modal de pré-cadastro desativado
 
 interface HomeJournalProps {
   clients: Client[];
@@ -21,6 +21,7 @@ interface HomeJournalProps {
   onSelectClient: (id: string, section?: string) => void;
   onLogout: () => void;
   userData: any;
+  onRegisterClient?: () => void;
 }
 
 // --- Skeleton Components ---
@@ -263,13 +264,14 @@ export const HomeJournal: React.FC<HomeJournalProps> = ({
   onSearchChange,
   onSelectClient,
   onLogout,
-  userData
+  userData,
+  onRegisterClient,
 }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState<Metric | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
+  // const [isRegistrationOpen, setIsRegistrationOpen] = useState(false); // V2 - modal de pré-cadastro desativado
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const metricsRef = useRef<HTMLDivElement>(null);
@@ -362,7 +364,7 @@ export const HomeJournal: React.FC<HomeJournalProps> = ({
           clients={clients}
           onClientClick={onSelectClient}
           icon={<User className="w-4 h-4" />}
-          onAddClick={() => setIsRegistrationOpen(true)}
+          onAddClick={onRegisterClient}
         />
         {MAIN_ORDER.map(portfolio => {
           const portfolioClients = grouped[portfolio];
@@ -605,9 +607,19 @@ export const HomeJournal: React.FC<HomeJournalProps> = ({
                       value={searchQuery}
                       onChange={(e) => { onSearchChange(e.target.value); setIsSearchOpen(true); }}
                       onFocus={() => setIsSearchOpen(true)}
-                      className="block w-full pl-11 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/8 focus:border-zinc-400 focus:bg-white transition-all text-sm"
+                      className="block w-full pl-11 pr-11 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/8 focus:border-zinc-400 focus:bg-white transition-all text-sm"
                       placeholder="Buscar por cliente, conta ou carteira..."
                     />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => { onSearchChange(''); setIsSearchOpen(false); }}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-zinc-400 hover:text-zinc-600 transition-colors"
+                        aria-label="Limpar busca"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
 
                   {/* Search Dropdown */}
@@ -780,8 +792,8 @@ export const HomeJournal: React.FC<HomeJournalProps> = ({
         <SettingsModal onClose={() => setIsSettingsOpen(false)} />
       )}
 
-      {/* Client Registration Modal */}
-      <ClientRegistrationModal
+      {/* Client Registration Modal - V2 (desativado - substituído pela página de cadastro direto) */}
+      {/* <ClientRegistrationModal
         isOpen={isRegistrationOpen}
         onClose={() => setIsRegistrationOpen(false)}
         userData={userData}
@@ -789,7 +801,7 @@ export const HomeJournal: React.FC<HomeJournalProps> = ({
           console.log('Saving client data:', data);
           toast.success('Cliente cadastrado com sucesso!');
         }}
-      />
+      /> */}
 
     </div>
   );

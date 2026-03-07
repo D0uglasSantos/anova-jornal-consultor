@@ -4,6 +4,7 @@ import { HomeJournal } from './components/HomeJournal';
 import { ClientOverlay } from './components/ClientOverlay';
 import { DockMenu } from './components/DockMenu';
 import { LoginPage } from './components/LoginPage';
+import { ClientRegistrationPage } from './components/ClientRegistrationPage';
 import { Client, RiskProfile, TriggerType, Priority, ViewContext, Metric } from './types';
 import { apiRequest } from './services/api';
 import { INITIAL_METRICS } from './constants';
@@ -166,6 +167,7 @@ export default function App() {
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [currentPage, setCurrentPage] = useState<'home' | 'register'>('home');
 
   // -- Auth Guard / Persistence --
   useEffect(() => {
@@ -414,6 +416,18 @@ export default function App() {
     return <LoginPage onLoginSuccess={handleLoginSuccess} />;
   }
 
+  if (currentPage === 'register') {
+    return (
+      <ClientRegistrationPage
+        userData={userData}
+        onBack={() => setCurrentPage('home')}
+        onSuccess={() => {
+          setCurrentPage('home');
+        }}
+      />
+    );
+  }
+
   return (
     <div className="bg-black">
       
@@ -433,6 +447,7 @@ export default function App() {
         }}
         onLogout={handleLogout}
         userData={userData}
+        onRegisterClient={() => setCurrentPage('register')}
       />
 
       {/* 2. The Dock (Fixed Navigation) 
